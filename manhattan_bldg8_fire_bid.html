@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Restoration Scope — The Manhattan Bldg 8 | Adamsmark Construction</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     ADAMSMARK BID TOOL — INSURANCE/RESTORATION TEMPLATE
+     Phase 1 Prototype · Adamsmark Construction LLC
+     ============================================================
+     DATA BLOCK: Edit BID_DATA below to configure a new bid.
+     Trade categories are multi-select (checkboxes).
+     All prices shown are CLIENT-FACING sale prices only.
+     Internal costs, margins, and GP% are never displayed.
+  ============================================================ */
+
+  :root {
+    --red:         #CC0000;
+    --red-dark:    #A30000;
+    --black:       #1A1A1A;
+    --charcoal:    #2E2E2E;
+    --mid:         #6B6B6B;
+    --divider:     #E2DFD9;
+    --bg:          #F8F7F5;
+    --white:       #FFFFFF;
+    --checked-bg:  #F0F4FF;
+    --checked-bdr: #3B5BDB;
+    --checked-dot: #3B5BDB;
+    --shadow-sm:   0 1px 3px rgba(0,0,0,.08);
+    --shadow-md:   0 4px 16px rgba(0,0,0,.10);
+    --radius:      6px;
+    --gc-bg:       #F5F5F5;
+    --gc-bdr:      #CCCCCC;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--black);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .site-header {
+    background: var(--black);
+    padding: 18px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo-lockup { display: flex; align-items: center; gap: 14px; }
+  .logo-svg { height: 32px; }
+
+  .header-label {
+    color: rgba(255,255,255,.45);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    border-left: 1px solid rgba(255,255,255,.18);
+    padding-left: 14px;
+    line-height: 1.3;
+  }
+
+  .header-badge {
+    color: rgba(255,255,255,.5);
+    font-size: 11px;
+    letter-spacing: .05em;
+  }
+
+  /* ── PROPERTY HERO ── */
+  .property-hero {
+    background: var(--red);
+    padding: 36px 48px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .property-hero::after {
+    content: '';
+    position: absolute;
+    right: -60px; top: -60px;
+    width: 280px; height: 280px;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .property-eyebrow {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.65);
+    margin-bottom: 8px;
+  }
+
+  .property-name {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 32px;
+    color: #fff;
+    line-height: 1.15;
+    margin-bottom: 6px;
+  }
+
+  .property-meta {
+    color: rgba(255,255,255,.7);
+    font-size: 13px;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .property-meta span::before { content: '·'; margin-right: 8px; opacity: .5; }
+  .property-meta span:first-child::before { content: none; }
+
+  /* ── TOOLBAR ── */
+  .scope-toolbar {
+    background: var(--white);
+    border-bottom: 1px solid var(--divider);
+    padding: 12px 48px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .toolbar-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--mid);
+    margin-right: 4px;
+  }
+
+  .btn-toolbar {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1.5px solid var(--divider);
+    background: transparent;
+    color: var(--charcoal);
+    transition: border-color .12s, background .12s;
+  }
+
+  .btn-toolbar:hover { border-color: var(--charcoal); background: var(--bg); }
+
+  .btn-toolbar.danger { color: var(--red); border-color: rgba(204,0,0,.2); }
+  .btn-toolbar.danger:hover { border-color: var(--red); background: rgba(204,0,0,.04); }
+
+  /* ── MAIN LAYOUT ── */
+  .bid-layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 32px;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 36px 48px 80px;
+    align-items: start;
+  }
+
+  /* ── LEFT: TRADE CATEGORIES ── */
+  .scope-section { min-width: 0; }
+
+  .section-heading {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--mid);
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--divider);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .section-count {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--mid);
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .trade-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 32px;
+  }
+
+  /* TRADE CATEGORY CARD */
+  .trade-card {
+    background: var(--white);
+    border: 1.5px solid var(--divider);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color .15s, box-shadow .15s;
+  }
+
+  .trade-card:hover { border-color: #B0B8D6; box-shadow: var(--shadow-sm); }
+
+  .trade-card.checked {
+    border-color: var(--checked-bdr);
+    background: var(--checked-bg);
+    box-shadow: 0 0 0 3px rgba(59,91,219,.08), var(--shadow-sm);
+  }
+
+  .trade-card.gc-card {
+    background: var(--gc-bg);
+    border-color: var(--gc-bdr);
+    border-style: dashed;
+  }
+
+  .trade-card.gc-card.checked {
+    background: #EFEFFF;
+    border-color: var(--checked-bdr);
+    border-style: solid;
+  }
+
+  /* Card header row — always visible */
+  .trade-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  /* Custom checkbox */
+  .trade-checkbox {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    border-radius: 4px;
+    border: 2px solid var(--divider);
+    background: var(--white);
+    position: relative;
+    transition: border-color .12s, background .12s;
+    flex-shrink: 0;
+  }
+
+  .trade-card.checked .trade-checkbox {
+    background: var(--checked-dot);
+    border-color: var(--checked-dot);
+  }
+
+  .trade-card.checked .trade-checkbox::after {
+    content: '';
+    position: absolute;
+    left: 3px; top: 1px;
+    width: 9px; height: 5px;
+    border-left: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: rotate(-45deg);
+    margin-top: 1px;
+  }
+
+  .trade-name {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--black);
+  }
+
+  .trade-card.gc-card .trade-name { color: var(--mid); font-style: italic; }
+
+  .trade-price {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--black);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -.01em;
+  }
+
+  .trade-card.checked .trade-price { color: var(--checked-dot); }
+  .trade-card.gc-card .trade-price { color: var(--mid); }
+
+  .trade-expand-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 4px;
+    color: var(--mid);
+    font-size: 16px;
+    line-height: 1;
+    transition: color .12s, transform .2s;
+    flex-shrink: 0;
+  }
+
+  .trade-expand-btn:hover { color: var(--black); }
+  .trade-expand-btn.open { transform: rotate(180deg); }
+
+  /* Expandable scope detail */
+  .trade-detail {
+    display: none;
+    border-top: 1px solid var(--divider);
+    padding: 0;
+  }
+
+  .trade-detail.open { display: block; }
+
+  .detail-header {
+    display: grid;
+    grid-template-columns: 1fr 100px 80px;
+    gap: 8px;
+    padding: 8px 18px;
+    background: rgba(0,0,0,.03);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--mid);
+    border-bottom: 1px solid var(--divider);
+  }
+
+  .detail-header span:not(:first-child) { text-align: right; }
+
+  .detail-row {
+    display: grid;
+    grid-template-columns: 1fr 100px 80px;
+    gap: 8px;
+    padding: 9px 18px;
+    border-bottom: 1px solid var(--divider);
+    font-size: 13px;
+    color: var(--charcoal);
+  }
+
+  .detail-row:last-child { border-bottom: none; }
+
+  .detail-row span:not(:first-child) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--mid);
+  }
+
+  .detail-note {
+    padding: 8px 18px 10px;
+    font-size: 12px;
+    color: var(--mid);
+    font-style: italic;
+    border-top: 1px solid var(--divider);
+    background: rgba(0,0,0,.02);
+  }
+
+  /* Labor/material tag */
+  .lm-tag {
+    display: inline-block;
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
+  .lm-tag.labor { background: #EEF2FF; color: #3B5BDB; }
+  .lm-tag.material { background: #F0FDF4; color: #166534; }
+
+  /* NOTES */
+  .bid-notes {
+    background: var(--white);
+    border: 1.5px solid var(--divider);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+  }
+
+  .notes-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--mid);
+    margin-bottom: 12px;
+  }
+
+  .notes-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+
+  .notes-list li {
+    font-size: 13px;
+    color: var(--charcoal);
+    display: flex;
+    gap: 10px;
+    line-height: 1.5;
+  }
+
+  .notes-list li::before { content: '—'; color: var(--mid); flex-shrink: 0; }
+
+  /* ── RIGHT: SUMMARY PANEL ── */
+  .summary-panel { position: sticky; top: 28px; }
+
+  .summary-card {
+    background: var(--white);
+    border: 1.5px solid var(--divider);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+  }
+
+  .summary-header { background: var(--black); padding: 16px 20px; }
+
+  .summary-header-title {
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    opacity: .75;
+  }
+
+  .summary-body { padding: 20px; }
+
+  .summary-counter {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .summary-counter-num {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--black);
+    letter-spacing: -.02em;
+    min-width: 28px;
+    transition: color .2s;
+  }
+
+  .summary-counter-num.has-value { color: var(--checked-dot); }
+
+  .summary-counter-label {
+    font-size: 13px;
+    color: var(--mid);
+  }
+
+  .summary-divider { height: 1px; background: var(--divider); margin: 14px 0; }
+
+  .summary-total-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--mid);
+    margin-bottom: 4px;
+  }
+
+  .summary-total-amount {
+    font-size: 38px;
+    font-weight: 600;
+    color: var(--black);
+    letter-spacing: -.03em;
+    font-variant-numeric: tabular-nums;
+    min-height: 46px;
+    transition: color .2s;
+  }
+
+  .summary-total-amount.has-value { color: var(--red); }
+  .summary-total-amount.zero { color: var(--divider); font-size: 28px; padding-top: 9px; }
+
+  /* Selected trade list in panel */
+  .summary-trades {
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .st-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12.5px;
+    color: var(--charcoal);
+    padding: 4px 0;
+    border-bottom: 1px solid var(--divider);
+    opacity: 0;
+    transform: translateY(3px);
+    transition: opacity .15s, transform .15s;
+  }
+
+  .st-item:last-child { border-bottom: none; }
+  .st-item.visible { opacity: 1; transform: translateY(0); }
+
+  .st-item-name { flex: 1; padding-right: 8px; }
+  .st-item-price { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--black); white-space: nowrap; }
+
+  .summary-empty {
+    font-size: 13px;
+    color: var(--mid);
+    font-style: italic;
+    padding: 8px 0;
+  }
+
+  /* Footer */
+  .summary-footer {
+    padding: 16px 20px 20px;
+    border-top: 1px solid var(--divider);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .btn-primary {
+    display: block; width: 100%;
+    background: var(--red); color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 600;
+    letter-spacing: .04em;
+    padding: 13px 20px;
+    border: none; border-radius: var(--radius);
+    cursor: pointer; text-align: center;
+    transition: background .15s;
+  }
+
+  .btn-primary:hover { background: var(--red-dark); }
+  .btn-primary:disabled { background: var(--divider); color: var(--mid); cursor: default; }
+
+  .btn-secondary {
+    display: block; width: 100%;
+    background: transparent; color: var(--charcoal);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 500;
+    padding: 10px 20px;
+    border: 1.5px solid var(--divider); border-radius: var(--radius);
+    cursor: pointer; text-align: center;
+    transition: border-color .15s, color .15s;
+  }
+
+  .btn-secondary:hover { border-color: var(--charcoal); color: var(--black); }
+
+  .summary-meta {
+    font-size: 11.5px; color: var(--mid);
+    text-align: center; line-height: 1.5;
+  }
+
+  /* Contact */
+  .contact-strip {
+    background: var(--white);
+    border: 1.5px solid var(--divider);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-top: 12px;
+  }
+
+  .contact-label {
+    font-size: 10.5px; font-weight: 600;
+    letter-spacing: .14em; text-transform: uppercase;
+    color: var(--mid); margin-bottom: 10px;
+  }
+
+  .contact-name { font-size: 14px; font-weight: 600; color: var(--black); margin-bottom: 2px; }
+  .contact-role { font-size: 12px; color: var(--mid); margin-bottom: 8px; }
+  .contact-links { display: flex; flex-direction: column; gap: 4px; }
+  .contact-links a { font-size: 12.5px; color: var(--red); text-decoration: none; font-weight: 500; }
+  .contact-links a:hover { text-decoration: underline; }
+
+  /* ── FOOTER ── */
+  .site-footer {
+    background: var(--black);
+    padding: 28px 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 40px;
+  }
+
+  .footer-copy { font-size: 12px; color: rgba(255,255,255,.35); }
+  .footer-prepared { font-size: 12px; color: rgba(255,255,255,.35); text-align: right; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 800px) {
+    .site-header, .property-hero, .scope-toolbar { padding-left: 20px; padding-right: 20px; }
+    .bid-layout { grid-template-columns: 1fr; padding: 24px 20px 60px; gap: 24px; }
+    .summary-panel { position: static; }
+    .property-name { font-size: 26px; }
+    .summary-total-amount { font-size: 32px; }
+    .detail-header, .detail-row { grid-template-columns: 1fr 80px; }
+    .detail-header span:last-child, .detail-row span:last-child { display: none; }
+  }
+
+  @media print {
+    .summary-footer, .scope-toolbar { display: none; }
+    .summary-panel { position: static; }
+    .trade-detail { display: block !important; }
+    body { background: #fff; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after, .st-item { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     DATA BLOCK — EDIT THIS SECTION TO CONFIGURE A NEW BID
+     ============================================================
+     BID_META       — property, job, contact info
+     TRADE_ITEMS    — one entry per trade category
+                      price = client-facing sale price only
+                      items = scope detail rows shown on expand
+                      isGC  = true for General Conditions row
+     BID_NOTES      — scope clarifications shown at bottom
+     CONTACT        — who the client calls
+============================================================ -->
+<script>
+const BID_META = {
+  property:    "The Manhattan — Building 8",
+  jobType:     "Fire Restoration",
+  address:     "Fort Worth, TX",
+  units:       "Units 817, 818, 827, 828",
+  client:      "Luma Residential",
+  prepared:    "Parker Adams",
+  date:        "January 5, 2026",
+  validDays:   30,
+  refNumber:   "26-0011-S1"
+};
+
+const TRADE_ITEMS = [
+  {
+    id: "frame-labor",
+    name: "Framing — Labor",
+    price: 443,
+    isGC: false,
+    items: [
+      { desc: "Floor joist system (2×10 w/blocking) — Remove & Replace", qty: "28 BF" },
+      { desc: "Stud wall 2×4×8′ 16″ oc — Remove & Replace",             qty: "14 LF" },
+      { desc: "Stud wall 2×4 (per BF) — Remove & Replace",              qty: "16 BF" }
+    ]
+  },
+  {
+    id: "frame-mat",
+    name: "Framing — Material",
+    price: 182,
+    isGC: false,
+    items: [
+      { desc: "Floor joist system (2×10 w/blocking) — Remove & Replace", qty: "28 BF" },
+      { desc: "Stud wall 2×4×8′ 16″ oc — Remove & Replace",             qty: "14 LF" },
+      { desc: "Stud wall 2×4 (per BF) — Remove & Replace",              qty: "16 BF" }
+    ]
+  },
+  {
+    id: "electrical",
+    name: "Electrical",
+    price: 254,
+    isGC: false,
+    items: [
+      { desc: "Light bar (3-light) — Detach & Reset", qty: "3 EA" }
+    ]
+  },
+  {
+    id: "hvac",
+    name: "H.V.A.C.",
+    price: 2121,
+    isGC: false,
+    items: [
+      { desc: "Air handler w/heat element (2-ton) — Detach & Reset (labor)", qty: "2 EA" },
+      { desc: "Air handler w/heat element (2-ton) — Detach & Reset (material)", qty: "2 EA" }
+    ]
+  },
+  {
+    id: "plumbing",
+    name: "Plumbing",
+    price: 1379,
+    isGC: false,
+    items: [
+      { desc: "Drain/vent line — ABS pipe w/fittings & hangers, 2″ — R&R (labor)", qty: "14 LF" },
+      { desc: "Drain/vent line — PVC pipe w/fittings & hangers, 4″ — R&R (labor)", qty: "14 LF" },
+      { desc: "Sink — single basin — Detach & Reset (labor)",                       qty: "3 EA"  },
+      { desc: "Drain/vent line — ABS pipe w/fittings & hangers, 2″ — R&R (material)", qty: "14 LF" },
+      { desc: "Drain/vent line — PVC pipe w/fittings & hangers, 4″ — R&R (material)", qty: "14 LF" },
+      { desc: "Sink — single basin — Detach & Reset (material)",                       qty: "3 EA"  }
+    ]
+  },
+  {
+    id: "insulation",
+    name: "Insulation",
+    price: 321,
+    isGC: false,
+    items: [
+      { desc: "Batt insulation 4″ R-13 paper/foil faced — R&R (labor)",    qty: "168 SF" },
+      { desc: "Batt insulation 4″ R-13 paper/foil faced — R&R (material)", qty: "168 SF" }
+    ]
+  },
+  {
+    id: "sheetrock",
+    name: "Drywall (Sheetrock)",
+    price: 870,
+    isGC: false,
+    items: [
+      { desc: "½″ drywall hung, taped, ready for texture — R&R (labor)",    qty: "214 SF" },
+      { desc: "½″ drywall hung, taped, ready for texture — R&R (material)", qty: "214 SF" }
+    ]
+  },
+  {
+    id: "texture",
+    name: "Texture",
+    price: 203,
+    isGC: false,
+    items: [
+      { desc: "Drywall texture — machine applied (labor)",    qty: "190 SF" },
+      { desc: "Drywall texture — machine applied (material)", qty: "190 SF" }
+    ]
+  },
+  {
+    id: "paint",
+    name: "Interior Paint",
+    price: 1530,
+    isGC: false,
+    items: [
+      { desc: "Paint walls — two coats (labor)",               qty: "108.88 SF" },
+      { desc: "Paint walls & ceiling — two coats (labor)",     qty: "701.38 SF" },
+      { desc: "Seal surface w/PVA primer — one coat (labor)",  qty: "190 SF"    },
+      { desc: "Paint walls — two coats (material)",            qty: "108.88 SF" },
+      { desc: "Paint walls & ceiling — two coats (material)",  qty: "701.38 SF" },
+      { desc: "Seal surface w/PVA primer — one coat (material)", qty: "190 SF"  }
+    ]
+  },
+  {
+    id: "cabinets",
+    name: "Cabinets & Countertops",
+    price: 1203,
+    isGC: false,
+    items: [
+      { desc: "Vanity with countertop — Detach & Reset", qty: "12 LF" }
+    ]
+  },
+  {
+    id: "mirrors",
+    name: "Mirrors",
+    price: 455,
+    isGC: false,
+    items: [
+      { desc: "Bathroom mirror — Detach & Reset", qty: "36 SF" }
+    ]
+  },
+  {
+    id: "flooring",
+    name: "Vinyl Plank Flooring",
+    price: 1486,
+    isGC: false,
+    items: [
+      { desc: "Vinyl plank flooring — R&R (labor)",    qty: "161.18 SF" },
+      { desc: "Vinyl plank flooring — R&R (material)", qty: "161.18 SF" }
+    ]
+  },
+  {
+    id: "clean",
+    name: "Final Clean",
+    price: 30,
+    isGC: false,
+    items: [
+      { desc: "Construction final cleaning — Residential", qty: "60.02 SF" }
+    ]
+  },
+  {
+    id: "gc",
+    name: "General Conditions",
+    price: 1048,
+    isGC: true,
+    gcNote: "Covers permits, utilities, and project management. Included in all full-scope proposals.",
+    items: []
+  }
+];
+
+const BID_NOTES = [
+  "Pricing valid for " + BID_META.validDays + " days from proposal date.",
+  "Scope reflects Supplement 1 for units 817, 818, 827, and 828 following fire damage assessment.",
+  "All work performed to restore affected units to pre-loss condition per Xactimate scope documentation.",
+  "Labor and material categories are listed separately — totals reflect combined client price per trade.",
+  "Change orders will be issued for any hidden damage discovered during demolition or repair.",
+  "General Conditions include permit fees, temporary utilities, and project supervision."
+];
+
+const CONTACT = {
+  name:  "Parker Adams",
+  role:  "Estimating & Project Management",
+  phone: "817.360.0909",
+  email: "parker@adamsmark.net"
+};
+</script>
+<!-- ============================================================
+     END DATA BLOCK
+============================================================ -->
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="logo-lockup">
+    <svg class="logo-svg" viewBox="0 0 180 36" xmlns="http://www.w3.org/2000/svg" aria-label="Adamsmark Construction">
+      <polygon points="16,0 32,18 16,36 0,18" fill="#CC0000"/>
+      <polygon points="16,6 26,18 16,30 6,18" fill="#1A1A1A"/>
+      <text x="40" y="14" font-family="DM Sans, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" letter-spacing="1.5">ADAMSMARK</text>
+      <text x="40" y="28" font-family="DM Sans, sans-serif" font-size="9" font-weight="400" fill="rgba(255,255,255,0.55)" letter-spacing="2.2">CONSTRUCTION</text>
+    </svg>
+    <div class="header-label">Restoration Scope</div>
+  </div>
+  <div class="header-badge" id="header-ref"></div>
+</header>
+
+<!-- PROPERTY HERO -->
+<div class="property-hero">
+  <div class="property-eyebrow">Fire Restoration — Supplement 1</div>
+  <div class="property-name" id="hero-property"></div>
+  <div class="property-meta" id="hero-meta"></div>
+</div>
+
+<!-- TOOLBAR -->
+<div class="scope-toolbar">
+  <span class="toolbar-label">Scope:</span>
+  <button class="btn-toolbar" id="btn-select-all">Select all</button>
+  <button class="btn-toolbar danger" id="btn-clear-all">Clear all</button>
+</div>
+
+<!-- MAIN LAYOUT -->
+<main class="bid-layout">
+
+  <!-- LEFT COLUMN -->
+  <div class="scope-section">
+
+    <div class="section-heading">
+      Trade categories
+      <span class="section-count" id="section-count">0 of 14 selected</span>
+    </div>
+
+    <div class="trade-list" id="trade-list" role="group" aria-label="Trade scope items">
+      <!-- Rendered by JS -->
+    </div>
+
+    <!-- NOTES -->
+    <div class="bid-notes">
+      <div class="notes-title">Scope notes & clarifications</div>
+      <ul class="notes-list" id="notes-list"></ul>
+    </div>
+
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <aside class="summary-panel" aria-label="Proposal summary">
+    <div class="summary-card">
+      <div class="summary-header">
+        <div class="summary-header-title">Your proposal</div>
+      </div>
+      <div class="summary-body">
+
+        <div class="summary-counter">
+          <div class="summary-counter-num" id="summary-count">0</div>
+          <div class="summary-counter-label">trade categories selected</div>
+        </div>
+
+        <div class="summary-divider"></div>
+
+        <div class="summary-total-label">Estimated Total</div>
+        <div class="summary-total-amount zero" id="summary-total">—</div>
+
+        <div class="summary-trades" id="summary-trades" aria-live="polite">
+          <div class="summary-empty" id="summary-empty">Select trade categories to build your scope.</div>
+        </div>
+
+      </div>
+      <div class="summary-footer">
+        <button class="btn-primary" id="btn-request" disabled>Request a walkthrough</button>
+        <button class="btn-secondary" id="btn-print">Download as PDF</button>
+        <div class="summary-meta" id="summary-meta">Select scope items above to see your total.</div>
+      </div>
+    </div>
+
+    <div class="contact-strip">
+      <div class="contact-label">Questions?</div>
+      <div class="contact-name" id="contact-name"></div>
+      <div class="contact-role" id="contact-role"></div>
+      <div class="contact-links" id="contact-links"></div>
+    </div>
+  </aside>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  <div class="footer-copy" id="footer-copy"></div>
+  <div class="footer-prepared" id="footer-prepared"></div>
+</footer>
+
+<script>
+(function() {
+
+  // State
+  const selected = new Set();
+
+  function fmt(n) {
+    return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+
+  // Static content
+  document.getElementById('header-ref').textContent = 'Ref: ' + BID_META.refNumber;
+  document.getElementById('hero-property').textContent = BID_META.property;
+  document.getElementById('hero-meta').innerHTML =
+    '<span>' + BID_META.address + '</span>' +
+    '<span>' + BID_META.units + '</span>' +
+    '<span>' + BID_META.client + '</span>' +
+    '<span>' + BID_META.date + '</span>';
+
+  document.getElementById('contact-name').textContent = CONTACT.name;
+  document.getElementById('contact-role').textContent = CONTACT.role;
+  document.getElementById('contact-links').innerHTML =
+    '<a href="tel:' + CONTACT.phone.replace(/\D/g,'') + '">' + CONTACT.phone + '</a>' +
+    '<a href="mailto:' + CONTACT.email + '">' + CONTACT.email + '</a>';
+
+  document.getElementById('footer-copy').textContent =
+    '© ' + new Date().getFullYear() + ' Adamsmark Construction LLC · Fort Worth, TX · All rights reserved.';
+  document.getElementById('footer-prepared').innerHTML =
+    'Prepared by ' + BID_META.prepared + '<br>' + BID_META.date;
+
+  // Notes
+  const notesList = document.getElementById('notes-list');
+  BID_NOTES.forEach(function(n) {
+    const li = document.createElement('li');
+    li.textContent = n;
+    notesList.appendChild(li);
+  });
+
+  // Build trade cards
+  const tradeList = document.getElementById('trade-list');
+
+  TRADE_ITEMS.forEach(function(trade) {
+    const card = document.createElement('div');
+    card.className = 'trade-card' + (trade.isGC ? ' gc-card' : '');
+    card.dataset.id = trade.id;
+
+    // Detail rows HTML
+    let detailHTML = '';
+    if (trade.items.length > 0) {
+      detailHTML =
+        '<div class="trade-detail" id="detail-' + trade.id + '">' +
+          '<div class="detail-header"><span>Scope item</span><span>Qty</span><span>Unit</span></div>' +
+          trade.items.map(function(item) {
+            const parts = item.qty.split(' ');
+            const unit = parts.length > 1 ? parts[parts.length - 1] : '';
+            const qty  = parts.length > 1 ? parts.slice(0, -1).join(' ') : item.qty;
+            return '<div class="detail-row">' +
+              '<span>' + item.desc + '</span>' +
+              '<span>' + qty + '</span>' +
+              '<span>' + unit + '</span>' +
+            '</div>';
+          }).join('') +
+        '</div>';
+    } else if (trade.gcNote) {
+      detailHTML =
+        '<div class="trade-detail" id="detail-' + trade.id + '">' +
+          '<div class="detail-note">' + trade.gcNote + '</div>' +
+        '</div>';
+    }
+
+    const hasDetail = trade.items.length > 0 || trade.gcNote;
+    const expandBtn = hasDetail
+      ? '<button class="trade-expand-btn" aria-label="Show scope detail" data-id="' + trade.id + '">▾</button>'
+      : '<span style="width:24px;display:inline-block;"></span>';
+
+    card.innerHTML =
+      '<div class="trade-header">' +
+        '<div class="trade-checkbox"></div>' +
+        '<div class="trade-name">' + trade.name + '</div>' +
+        '<div class="trade-price">' + fmt(trade.price) + '</div>' +
+        expandBtn +
+      '</div>' +
+      detailHTML;
+
+    // Toggle check on header click (not expand button)
+    card.querySelector('.trade-header').addEventListener('click', function(e) {
+      if (e.target.classList.contains('trade-expand-btn') || e.target.closest('.trade-expand-btn')) return;
+      toggleTrade(trade.id);
+    });
+
+    // Expand button
+    if (hasDetail) {
+      card.querySelector('.trade-expand-btn').addEventListener('click', function(e) {
+        e.stopPropagation();
+        const detail = document.getElementById('detail-' + trade.id);
+        const btn = e.currentTarget;
+        const isOpen = detail.classList.contains('open');
+        detail.classList.toggle('open', !isOpen);
+        btn.classList.toggle('open', !isOpen);
+        btn.setAttribute('aria-label', isOpen ? 'Show scope detail' : 'Hide scope detail');
+      });
+    }
+
+    tradeList.appendChild(card);
+  });
+
+  // Toggle logic
+  function toggleTrade(id) {
+    if (selected.has(id)) {
+      selected.delete(id);
+    } else {
+      selected.add(id);
+    }
+    updateCard(id);
+    updateSummary();
+  }
+
+  function updateCard(id) {
+    const card = document.querySelector('.trade-card[data-id="' + id + '"]');
+    if (!card) return;
+    card.classList.toggle('checked', selected.has(id));
+  }
+
+  function updateSummary() {
+    const count = selected.size;
+    const total = TRADE_ITEMS
+      .filter(function(t) { return selected.has(t.id); })
+      .reduce(function(sum, t) { return sum + t.price; }, 0);
+
+    // Counter
+    const countEl = document.getElementById('summary-count');
+    countEl.textContent = count;
+    countEl.classList.toggle('has-value', count > 0);
+
+    // Section count
+    document.getElementById('section-count').textContent =
+      count + ' of ' + TRADE_ITEMS.length + ' selected';
+
+    // Total
+    const totalEl = document.getElementById('summary-total');
+    if (count === 0) {
+      totalEl.textContent = '—';
+      totalEl.className = 'summary-total-amount zero';
+    } else {
+      totalEl.classList.remove('zero');
+      totalEl.classList.add('has-value');
+      animateTotal(total);
+    }
+
+    // Trade list in panel
+    const tradesEl = document.getElementById('summary-trades');
+    const emptyEl  = document.getElementById('summary-empty');
+
+    if (count === 0) {
+      tradesEl.innerHTML = '';
+      tradesEl.appendChild(emptyEl);
+      emptyEl.style.display = '';
+    } else {
+      emptyEl.style.display = 'none';
+      tradesEl.innerHTML = '';
+      const selectedItems = TRADE_ITEMS.filter(function(t) { return selected.has(t.id); });
+      selectedItems.forEach(function(t, i) {
+        const item = document.createElement('div');
+        item.className = 'st-item';
+        item.innerHTML =
+          '<span class="st-item-name">' + t.name + '</span>' +
+          '<span class="st-item-price">' + fmt(t.price) + '</span>';
+        tradesEl.appendChild(item);
+        setTimeout(function() { item.classList.add('visible'); }, i * 40);
+      });
+    }
+
+    // CTA
+    document.getElementById('btn-request').disabled = count === 0;
+    document.getElementById('summary-meta').textContent = count > 0
+      ? 'Valid ' + BID_META.validDays + ' days · Ref ' + BID_META.refNumber
+      : 'Select scope items above to see your total.';
+  }
+
+  // Animated total counter
+  var _animTarget = 0;
+  var _animFrame  = null;
+
+  function animateTotal(target) {
+    if (_animFrame) cancelAnimationFrame(_animFrame);
+    _animTarget = target;
+
+    const el = document.getElementById('summary-total');
+    const start = extractNumber(el.textContent) || 0;
+    const duration = 380;
+    const startTime = performance.now();
+
+    function step(now) {
+      const elapsed  = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased    = 1 - Math.pow(1 - progress, 4);
+      const current  = Math.round(start + (_animTarget - start) * eased);
+      el.textContent = fmt(current);
+      if (progress < 1) { _animFrame = requestAnimationFrame(step); }
+      else { el.textContent = fmt(_animTarget); _animFrame = null; }
+    }
+
+    _animFrame = requestAnimationFrame(step);
+  }
+
+  function extractNumber(str) {
+    const cleaned = (str || '').replace(/[^0-9]/g, '');
+    return cleaned ? parseInt(cleaned, 10) : 0;
+  }
+
+  // Select / Clear all
+  document.getElementById('btn-select-all').addEventListener('click', function() {
+    TRADE_ITEMS.forEach(function(t) { selected.add(t.id); updateCard(t.id); });
+    updateSummary();
+  });
+
+  document.getElementById('btn-clear-all').addEventListener('click', function() {
+    selected.forEach(function(id) { selected.delete(id); updateCard(id); });
+    selected.clear();
+    updateSummary();
+  });
+
+  // CTA
+  document.getElementById('btn-request').addEventListener('click', function() {
+    const names = TRADE_ITEMS
+      .filter(function(t) { return selected.has(t.id); })
+      .map(function(t) { return t.name; })
+      .join(', ');
+    const subject = encodeURIComponent(
+      'Walkthrough Request — ' + BID_META.property + ' (' + BID_META.refNumber + ')'
+    );
+    const body = encodeURIComponent('Selected scope: ' + names);
+    window.location.href = 'mailto:' + CONTACT.email + '?subject=' + subject + '&body=' + body;
+  });
+
+  document.getElementById('btn-print').addEventListener('click', function() { window.print(); });
+
+})();
+</script>
+</body>
+</html>
