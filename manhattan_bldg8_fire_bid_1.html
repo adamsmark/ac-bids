@@ -518,6 +518,35 @@
     gap: 10px;
   }
 
+  .ask-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 2px;
+  }
+
+  .ask-input, .ask-textarea {
+    width: 100%;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--black);
+    padding: 9px 11px;
+    border: 1.5px solid var(--divider);
+    border-radius: var(--radius);
+    background: var(--white);
+    transition: border-color .15s;
+    resize: none;
+  }
+
+  .ask-input::placeholder, .ask-textarea::placeholder { color: #A8A29A; }
+
+  .ask-input:focus, .ask-textarea:focus {
+    outline: none;
+    border-color: var(--checked-bdr);
+  }
+
+  .ask-textarea { min-height: 62px; line-height: 1.45; }
+
   .btn-primary {
     display: block; width: 100%;
     background: var(--red); color: #fff;
@@ -794,6 +823,11 @@ const CONTACT = {
   phone: "817.360.0909",
   email: "parker@adamsmark.net"
 };
+
+// Server endpoint that receives scope submissions.
+// Leave blank ("") to fall back to email-only mode.
+const SUBMIT_ENDPOINT = "https://tayloradamsmark.pythonanywhere.com/submit";
+
 </script>
 <!-- ============================================================
      END DATA BLOCK
@@ -869,7 +903,12 @@ const CONTACT = {
 
       </div>
       <div class="summary-footer">
-        <button class="btn-primary" id="btn-request" disabled>Request a walkthrough</button>
+        <div class="ask-fields" id="ask-fields">
+          <input type="text" id="ask-name" class="ask-input" placeholder="Your name (optional)" autocomplete="name">
+          <input type="email" id="ask-email" class="ask-input" placeholder="Your email (optional)" autocomplete="email">
+          <textarea id="ask-comment" class="ask-textarea" placeholder="Questions about pricing or scope? Add them here (optional)"></textarea>
+        </div>
+        <button class="btn-primary" id="btn-request" disabled>Submit My Scope</button>
         <button class="btn-secondary" id="btn-print">Download as PDF</button>
         <div class="summary-meta" id="summary-meta">Select scope items above to see your total.</div>
       </div>
@@ -1113,18 +1152,75 @@ const CONTACT = {
     updateSummary();
   });
 
-  // CTA
+  // CTA — submit scope to server, then confirm
   document.getElementById('btn-request').addEventListener('click', function() {
-    const names = TRADE_ITEMS
-      .filter(function(t) { return selected.has(t.id); })
-      .map(function(t) { return t.name; })
-      .join(', ');
-    const subject = encodeURIComponent(
-      'Walkthrough Request — ' + BID_META.property + ' (' + BID_META.refNumber + ')'
-    );
-    const body = encodeURIComponent('Selected scope: ' + names);
-    window.location.href = 'mailto:' + CONTACT.email + '?subject=' + subject + '&body=' + body;
+    const btn = document.getElementById('btn-request');
+    const selectedTrades = TRADE_ITEMS.filter(function(t) { return selected.has(t.id); });
+    const names = selectedTrades.map(function(t) { return t.name; });
+    const total = selectedTrades.reduce(function(s, t) { return s + t.price; }, 0);
+
+    const payload = {
+      property: BID_META.property,
+      ref:      BID_META.refNumber,
+      client:   BID_META.client,
+      selected: names,
+      total:    total,
+      contact_name:  (document.getElementById('ask-name')  || {}).value || '',
+      contact_email: (document.getElementById('ask-email') || {}).value || '',
+      comment:       (document.getElementById('ask-comment')|| {}).value || ''
+    };
+
+    if (SUBMIT_ENDPOINT) {
+      btn.disabled = true;
+      btn.textContent = 'Submitting…';
+      fetch(SUBMIT_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(function(r) { return r.json(); })
+      .then(function() {
+        showConfirmation(names, total);
+      })
+      .catch(function() {
+        // Fallback to email if server unreachable
+        emailFallback(names);
+      });
+    } else {
+      emailFallback(names);
+    }
   });
+
+  function showConfirmation(names, total) {
+    const panel = document.querySelector('.summary-body');
+    const footer = document.querySelector('.summary-footer');
+    if (footer) footer.style.display = 'none';
+    if (panel) {
+      panel.innerHTML =
+        '<div style="text-align:center;padding:12px 0;">' +
+          '<div style="width:48px;height:48px;border-radius:50%;background:#2E7D32;margin:0 auto 14px;position:relative;">' +
+            '<div style="position:absolute;left:17px;top:12px;width:10px;height:18px;border-right:3px solid #fff;border-bottom:3px solid #fff;transform:rotate(45deg);"></div>' +
+          '</div>' +
+          '<div style="font-size:17px;font-weight:600;color:#1A1A1A;margin-bottom:8px;">Scope submitted</div>' +
+          '<div style="font-size:13px;color:#6B6B6B;line-height:1.5;margin-bottom:16px;">' +
+            'Thank you. ' + CONTACT.name + ' has received your selected scope and will be in touch shortly to schedule a walkthrough.' +
+          '</div>' +
+          '<div style="background:#F8F7F5;border-radius:6px;padding:14px;text-align:left;">' +
+            '<div style="font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#6B6B6B;margin-bottom:8px;">Your selection</div>' +
+            names.map(function(n){return '<div style="font-size:12.5px;color:#2E2E2E;padding:2px 0;">• ' + n + '</div>';}).join('') +
+            '<div style="border-top:1px solid #E2DFD9;margin-top:8px;padding-top:8px;font-size:15px;font-weight:600;color:#CC0000;">Total: $' + total.toLocaleString('en-US') + '</div>' +
+          '</div>' +
+        '</div>';
+    }
+  }
+
+  function emailFallback(names) {
+    const subject = encodeURIComponent(
+      'Scope Submission — ' + BID_META.property + ' (' + BID_META.refNumber + ')'
+    );
+    const body = encodeURIComponent('Selected scope: ' + names.join(', '));
+    window.location.href = 'mailto:' + CONTACT.email + '?subject=' + subject + '&body=' + body;
+  }
 
   document.getElementById('btn-print').addEventListener('click', function() { window.print(); });
 
