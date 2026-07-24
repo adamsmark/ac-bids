@@ -218,16 +218,15 @@
 
   @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
 
-  /* ---- PRINT ---- */
-  @media print{
-    .sidebar,.btn-dl,.modal-wrap,.overlay,.panel,button,.btn{display:none!important;}
-    .shell{display:block;}
-    .content{display:block;max-width:100%;padding:0;}
-    .summary{position:static;}
-    .doc-head,.card{page-break-inside:avoid;}
-    .main::before{display:none!important;}
-    @page{margin:0.6in;}
-  }
+  .btn-dl.busy{opacity:.6;cursor:default;}
+  .btn-dl.error{color:var(--red);border-color:var(--red);}
+
+  /* approve-modal terms acknowledgment */
+  .ack-row{display:flex;align-items:flex-start;gap:9px;margin-top:16px;}
+  .ack-row input[type=checkbox]{width:16px;height:16px;min-width:16px;margin-top:1px;accent-color:var(--green);cursor:pointer;}
+  .ack-label{font-size:12.5px;color:var(--char);line-height:1.45;font-weight:400!important;margin:0!important;cursor:pointer;}
+  .ack-label a{color:var(--red);text-decoration:underline;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
 </style>
 </head>
 <body>
@@ -301,7 +300,7 @@ const P = {
       <div class="topbar-left">
         <a class="back" href="#">&larr; Back</a>
       </div>
-      <a class="btn-dl" onclick="window.print()">&#8595; Download PDF</a>
+      <a class="btn-dl" id="btn-dl" onclick="downloadProposalPdf()">&#8595; Download PDF</a>
     </div>
 
     <div class="content">
@@ -467,6 +466,7 @@ const P = {
 <script>
 (function(){
   const SUBMIT_URL = "https://tayloradamsmark.pythonanywhere.com/submit";
+  const PDF_URL = "https://tayloradamsmark.pythonanywhere.com/proposal-pdf";
   function fmt(n){return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
   function fmt0(n){return '$'+n.toLocaleString('en-US',{maximumFractionDigits:0});}
 
@@ -500,6 +500,9 @@ const P = {
   function currentScopeName(){
     return altOn ? 'Removal Only (alternate)' : 'Remove & Replace (base)';
   }
+  function currentScopeItems(){
+    return altOn ? [P.alternate.note] : P.base.items.slice();
+  }
 
   function recalc(){
     const sub = currentPrice();
@@ -524,13 +527,72 @@ const P = {
   window.openPanel = function(){document.getElementById('panel').classList.add('open');document.getElementById('overlay').classList.add('open');};
   window.closePanel = function(){document.getElementById('panel').classList.remove('open');document.getElementById('overlay').classList.remove('open');};
 
+  // full PDF generation (server-rendered, replaces window.print())
+  window.downloadProposalPdf = function(){
+    const btn = document.getElementById('btn-dl');
+    if (btn.classList.contains('busy')) return;
+    const originalHTML = btn.innerHTML;
+    btn.classList.remove('error');
+    btn.classList.add('busy');
+    btn.innerHTML = 'Generating…';
+
+    const sub = currentPrice();
+    const tax = Math.round(sub * P.taxRate * 100)/100;
+    const grand = sub + tax;
+
+    const payload = {
+      property: P.property,
+      ref: P.ref,
+      client: P.client,
+      address: P.address,
+      selected: [currentScopeName()],
+      total: grand,
+      subtotal: sub,
+      tax: tax,
+      scope_items: currentScopeItems(),
+      specific_exclusions: P.specificExclusions.slice(),
+      estimator_name: P.estimator,
+      estimator_role: P.estimatorRole,
+      estimator_phone: P.phone,
+      estimator_email: P.email
+    };
+
+    fetch(PDF_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    })
+    .then(function(r){ if(!r.ok) throw new Error('bad status'); return r.blob(); })
+    .then(function(blob){
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (P.property || 'proposal').replace(/\s+/g,'_') + '_Proposal.pdf';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      btn.classList.remove('busy');
+      btn.innerHTML = originalHTML;
+    })
+    .catch(function(){
+      btn.classList.remove('busy');
+      btn.classList.add('error');
+      btn.innerHTML = 'Failed — Retry';
+    });
+  };
+
   // modals
   const MODALS = {
     approve: {
       title: "Approve & Sign",
       fields: `<label>Full name</label><input type="text" id="m-name" placeholder="Your name">
                <label>Title</label><input type="text" id="m-title" placeholder="e.g. Regional Manager">
-               <label>Email</label><input type="email" id="m-email" placeholder="you@company.com">`,
+               <label>Email</label><input type="email" id="m-email" placeholder="you@company.com">
+               <div class="ack-row">
+                 <input type="checkbox" id="m-ack">
+                 <label for="m-ack" class="ack-label">I have read and agree to the <a href="#" onclick="openPanel();return false;">Warranty, Insurance &amp; Exclusions</a> terms.</label>
+               </div>`,
       cta: "Continue to Sign",
       ok: "Approved. You'll be redirected to sign the agreement, and "+P.estimator+" will be notified."
     },
@@ -564,14 +626,27 @@ const P = {
       '<div class="modal-body">'+m.fields+
         '<div class="modal-actions">'+
           '<button class="btn btn-cancel" onclick="closeModal()">Cancel</button>'+
-          '<button class="btn btn-approve" onclick="submitModal(\''+kind+'\')">'+m.cta+'</button>'+
+          '<button class="btn btn-approve" id="modal-cta"'+(kind==='approve'?' disabled':'')+
+            ' onclick="submitModal(\''+kind+'\')">'+m.cta+'</button>'+
         '</div>'+
       '</div>';
+    if (kind === 'approve') {
+      const ack = document.getElementById('m-ack');
+      const cta = document.getElementById('modal-cta');
+      if (ack && cta) {
+        ack.addEventListener('change', function(){ cta.disabled = !ack.checked; });
+      }
+    }
     document.getElementById('modal-wrap').classList.add('open');
   };
   window.closeModal = function(){document.getElementById('modal-wrap').classList.remove('open');};
   window.submitModal = function(kind){
     const m = MODALS[kind];
+    const ackEl = document.getElementById('m-ack');
+    // defense in depth: never submit an approval without the terms acknowledgment,
+    // even if the disabled button state were bypassed
+    if (kind === 'approve' && !(ackEl && ackEl.checked)) return;
+    const terms_ack = kind === 'approve' ? !!(ackEl && ackEl.checked) : false;
     const nameEl  = document.getElementById('m-name');
     const emailEl = document.getElementById('m-email');
     const titleEl = document.getElementById('m-title');
@@ -600,11 +675,16 @@ const P = {
         client: P.client,
         selected: [currentScopeName()],
         total: grand,
+        subtotal: sub,
+        tax: tax,
         contact_name: contact_name,
         contact_email: contact_email,
         contact_title: contact_title,
         comment: comment,
-        action_type: kind
+        action_type: kind,
+        scope_items: currentScopeItems(),
+        specific_exclusions: P.specificExclusions.slice(),
+        terms_ack: terms_ack
       })
     })
     .then(function(r){ if(!r.ok) throw new Error('bad status'); return r.json(); })
